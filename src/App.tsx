@@ -8,6 +8,7 @@ import {
 
 import './App.css';
 import BizCharts from "./BizCharts";
+import SvgD3 from "./SvgD3";
 
 //New Comment sdsdsd
 
@@ -27,7 +28,7 @@ export default () =>
           <div />
       </Route>
       <Route path="/react-svg-d3">
-          <div />
+          <SvgD3 />
       </Route>  
     </Switch>
       
