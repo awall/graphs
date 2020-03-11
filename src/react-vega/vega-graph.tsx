@@ -3,85 +3,109 @@ import VegaRenderer from "./renderer";
 
 const spec = {
     "$schema": "https://vega.github.io/schema/vega/v5.json",
-    "width": 400,
+    "description": "A basic line chart example.",
+    "width": 500,
     "height": 200,
-    "padding": {"left": 5, "right": 5, "top": 5, "bottom": 5},
+    "padding": 5,
+
+    "signals": [
+        {
+            "name": "interpolate",
+            "value": "linear",
+            "bind": {
+                "input": "select",
+                "options": [
+                    "basis",
+                    "cardinal",
+                    "catmull-rom",
+                    "linear",
+                    "monotone",
+                    "natural",
+                    "step",
+                    "step-after",
+                    "step-before"
+                ]
+            }
+        }
+    ],
+
     "data": [
         {
             "name": "table",
             "values": [
-                {"category": "A", "amount": 28},
-                {"category": "B", "amount": 55},
-                {"category": "C", "amount": 43},
-                {"category": "D", "amount": 91},
-                {"category": "E", "amount": 81},
-                {"category": "F", "amount": 53},
-                {"category": "G", "amount": 19},
-                {"category": "H", "amount": 87}
+                {"x": 0, "y": 28, "c":0}, {"x": 0, "y": 20, "c":1},
+                {"x": 1, "y": 43, "c":0}, {"x": 1, "y": 35, "c":1},
+                {"x": 2, "y": 81, "c":0}, {"x": 2, "y": 10, "c":1},
+                {"x": 3, "y": 19, "c":0}, {"x": 3, "y": 15, "c":1},
+                {"x": 4, "y": 52, "c":0}, {"x": 4, "y": 48, "c":1},
+                {"x": 5, "y": 24, "c":0}, {"x": 5, "y": 28, "c":1},
+                {"x": 6, "y": 87, "c":0}, {"x": 6, "y": 66, "c":1},
+                {"x": 7, "y": 17, "c":0}, {"x": 7, "y": 27, "c":1},
+                {"x": 8, "y": 68, "c":0}, {"x": 8, "y": 16, "c":1},
+                {"x": 9, "y": 49, "c":0}, {"x": 9, "y": 25, "c":1}
             ]
         }
     ],
-    "signals": [
-        {
-            "name": "tooltip",
-            "value": {},
-            "on": [
-                {"events": "rect:mouseover", "update": "datum"},
-                {"events": "rect:mouseout", "update": "{}"}
-            ]
-        }
-    ],
+
     "scales": [
         {
-            "name": "xscale",
-            "type": "band",
-            "domain": {"data": "table", "field": "category"},
-            "range": "width"
+            "name": "x",
+            "type": "point",
+            "range": "width",
+            "domain": {"data": "table", "field": "x"}
         },
         {
-            "name": "yscale",
-            "domain": {"data": "table", "field": "amount"},
+            "name": "y",
+            "type": "linear",
+            "range": "height",
             "nice": true,
-            "range": "height"
+            "zero": true,
+            "domain": {"data": "table", "field": "y"}
+        },
+        {
+            "name": "color",
+            "type": "ordinal",
+            "range": "category",
+            "domain": {"data": "table", "field": "c"}
         }
     ],
+
     "axes": [
-        {"orient": "bottom", "scale": "xscale"},
-        {"orient": "left", "scale": "yscale"}
+        {"orient": "bottom", "scale": "x"},
+        {"orient": "left", "scale": "y"}
     ],
+
     "marks": [
         {
-            "type": "rect",
-            "from": {"data": "table"},
-            "encode": {
-                "enter": {
-                    "x": {"scale": "xscale", "field": "category", "offset": 1},
-                    "width": {"scale": "xscale", "band": 1, "offset": -1},
-                    "y": {"scale": "yscale", "field": "amount"},
-                    "y2": {"scale": "yscale", "value": 0}
-                },
-                "update": {"fill": {"value": "steelblue"}},
-                "hover": {"fill": {"value": "red"}}
-            }
-        },
-        {
-            "type": "text",
-            "encode": {
-                "enter": {
-                    "align": {"value": "center"},
-                    "baseline": {"value": "bottom"},
-                    "fill": {"value": "#333"}
-                },
-                "update": {
-                    "x": {"scale": "xscale", "signal": "tooltip.category", "band": 0.5},
-                    "y": {"scale": "yscale", "signal": "tooltip.amount", "offset": -2},
-                    "text": {"signal": "tooltip.amount"},
-                    "fillOpacity": [
-                        {"test": "datum === tooltip", "value": 0},
-                        {"value": 1}
-                    ]
+            "type": "group",
+            "from": {
+                "facet": {
+                    "name": "series",
+                    "data": "table",
+                    "groupby": "c"
                 }
-            }
+            },
+            "marks": [
+                {
+                    "type": "line",
+                    "from": {"data": "series"},
+                    "encode": {
+                        "enter": {
+                            "x": {"scale": "x", "field": "x"},
+                            "y": {"scale": "y", "field": "y"},
+                            "stroke": {"scale": "color", "field": "c"},
+                            "strokeWidth": {"value": 2}
+                        },
+                        "update": {
+                            "interpolate": {"signal": "interpolate"},
+                            "fillOpacity": {"value": 1}
+                        },
+                        "hover": {
+                            "fillOpacity": {"value": 0.5}
+                        }
+                    }
+                }
+            ]
         }
     ]
 };

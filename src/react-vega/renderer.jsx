@@ -6,6 +6,7 @@ import * as vega from 'vega';
  * Based on renderer.js from vega-editor.
  */
 export default class VegaRenderer extends React.Component {
+    
     static propTypes = {
         vegaSpec: PropTypes.object,
         renderer: PropTypes.string
