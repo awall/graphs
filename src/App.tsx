@@ -9,6 +9,7 @@ import {
 import './App.css';
 import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
+import ReactVis from "./react-vis/vis-graph"
 
 //New Comment sdsdsd
 
@@ -18,6 +19,7 @@ export default () =>
       <Link to="/bizcharts">BizCharts</Link>
       <Link to="/plottable">Plottable</Link>
       <Link to="/react-svg-d3">React SVG + D3</Link>
+        <Link to="/react-vis">React-Vis</Link>
     </header>
 
     <Switch>
@@ -29,7 +31,10 @@ export default () =>
       </Route>
       <Route path="/react-svg-d3">
           <SvgD3 />
-      </Route>  
+      </Route>
+        <Route path="/react-vis">
+            <ReactVis />
+        </Route>
     </Switch>
       
   </Router>)
