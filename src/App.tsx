@@ -11,8 +11,7 @@ import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
 import ReactVis from "./react-vis/vis-graph"
 import VegaGraph from "./vega/vega-graph"
-//New Comment sdsdsd
-
+import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 export default () => 
   (<Router>
     <header>
@@ -21,6 +20,7 @@ export default () =>
       <Link to="/react-svg-d3">React SVG + D3</Link>
         <Link to="/react-vis">React-Vis</Link>
         <Link to="/vega">Vega</Link>
+        <Link to="/RumbleCharts">Rumble Charts</Link>
     </header>
 
     <Switch>
@@ -38,6 +38,9 @@ export default () =>
         </Route>
         <Route path="/vega">
             <VegaGraph/>
+        </Route>
+        <Route path="/RumbleCharts">
+            <RumbleChartsGraph/>
         </Route>
     </Switch>
       
