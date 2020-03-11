@@ -10,7 +10,7 @@ import './App.css';
 import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
 import ReactVis from "./react-vis/vis-graph"
-import ReactVega from "./react-vega/vega-graph"
+import VegaGraph from "./vega/vega-graph"
 //New Comment sdsdsd
 
 export default () => 
@@ -20,7 +20,7 @@ export default () =>
       <Link to="/plottable">Plottable</Link>
       <Link to="/react-svg-d3">React SVG + D3</Link>
         <Link to="/react-vis">React-Vis</Link>
-        <Link to="/react-vega">React-Vega</Link>
+        <Link to="/vega">Vega</Link>
     </header>
 
     <Switch>
@@ -36,8 +36,8 @@ export default () =>
         <Route path="/react-vis">
             <ReactVis />
         </Route>
-        <Route path="/react-vega">
-            <ReactVega/>
+        <Route path="/vega">
+            <VegaGraph/>
         </Route>
     </Switch>
       
