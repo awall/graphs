@@ -12,6 +12,8 @@ import SvgD3 from "./SvgD3";
 import ReactVis from "./react-vis/vis-graph"
 import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
+import PlotlyGraph from "./plotly/plotlyGraph";
+
 export default () => 
   (<Router>
     <header>
@@ -21,6 +23,7 @@ export default () =>
         <Link to="/react-vis">React-Vis</Link>
         <Link to="/vega">Vega</Link>
         <Link to="/RumbleCharts">Rumble Charts</Link>
+        <Link to="/Plotly">Plotly</Link>
     </header>
 
     <Switch>
@@ -41,6 +44,9 @@ export default () =>
         </Route>
         <Route path="/RumbleCharts">
             <RumbleChartsGraph/>
+        </Route>
+        <Route path="/Plotly">
+            <PlotlyGraph/>
         </Route>
     </Switch>
       
