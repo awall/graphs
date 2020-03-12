@@ -13,6 +13,7 @@ import ReactVis from "./react-vis/vis-graph"
 import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
+import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
 
 export default () => 
   (<Router>
@@ -24,6 +25,7 @@ export default () =>
         <Link to="/vega">Vega</Link>
         <Link to="/RumbleCharts">Rumble Charts</Link>
         <Link to="/Plotly">Plotly</Link>
+        <Link to="/HighCharts">High Charts</Link>
     </header>
 
     <Switch>
@@ -48,6 +50,10 @@ export default () =>
         <Route path="/Plotly">
             <PlotlyGraph/>
         </Route>
+        <Route path="/HighCharts">
+            <HighChartsGraph/>
+        </Route>
+        
     </Switch>
       
   </Router>)
