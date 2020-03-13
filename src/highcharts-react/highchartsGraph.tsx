@@ -6,7 +6,7 @@ require("highcharts/modules/draggable-points")(Highcharts);
 
 export const HighChartsGraph = (props : HighchartsReact.Props) => {
     
-    const [data, setData] = React.useState([1,2,3]);
+    //const [data, setData] = React.useState([1,2,3]);
     
     const options = {
         chart: {
@@ -19,7 +19,7 @@ export const HighChartsGraph = (props : HighchartsReact.Props) => {
 
         xAxis: {
             categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
-                'Sep', 'Oct', 'Nov', 'Dec']
+                'Sep', 'Oct', 'Nov', 'Dec'],
         },
 
         yAxis: {

@@ -14,6 +14,7 @@ import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
+import EchartsGraph from "./echartsForReact/echartsJS";
 
 export default () => 
   (<Router>
@@ -26,6 +27,7 @@ export default () =>
         <Link to="/RumbleCharts">Rumble Charts</Link>
         <Link to="/Plotly">Plotly</Link>
         <Link to="/HighCharts">High Charts</Link>
+        <Link to="/Echarts">Echarts</Link>
     </header>
 
     <Switch>
@@ -53,7 +55,9 @@ export default () =>
         <Route path="/HighCharts">
             <HighChartsGraph/>
         </Route>
-        
+        <Route path="/Echarts">
+            <EchartsGraph/>
+        </Route>
     </Switch>
       
   </Router>)
