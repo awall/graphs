@@ -1,30 +1,31 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {path} from 'd3-path';
 import {scaleLinear} from 'd3-scale';
+import {useMousePosition} from './Util';
+import {AppState, Point} from "./AppState";
 
 const ClientSize = React.createContext({width: 900, height: 500});
 
-const maxKey = 1000;
-const data = Array.from(Array(maxKey).keys()).map(x => [x, x + (Math.random() * 5.0)]);
-const maxDatum = 1005;
-
 const Series = (props: any) => {
     const size = useContext(ClientSize);
+
+    const [head, ...tail] = props.points;
     
     const x = scaleLinear()
-        .domain([0, maxKey])
+        .domain([new Date('2000-01-01'), new Date('2050-12-01')])
         .range([0, size.width]);
     
+    const maxDatum = 12000; 
     const y = scaleLinear()
         .domain([0, maxDatum])
         .range([size.height, 0]);
     
     const pat = path();
-    const [head, ...tail] = props.points;
-    pat.moveTo(x(head[0]), y(head[1]));
-    tail.forEach((v: any) => pat.lineTo(x(v[0]), y(v[1])));
     
-    return <path d={pat.toString()} fill="none" stroke="black" stroke-width="2" />;
+    pat.moveTo(x(head.x), y(head.y));
+    tail.forEach((v: Point) => pat.lineTo(x(v.x), y(v.y)));
+    
+    return <path d={pat.toString()} fill="none" stroke="black" strokeWidth="2" />;
 };
 
 const ChartSvg = (props: any) => {
@@ -52,40 +53,27 @@ const Chart = (props: any) => {
         </ClientSize.Provider>
     </div>;
 };
-
-const useMousePosition = () => {
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    useEffect(() => {
-        const setFromEvent = (e: any) => setPosition({ x: e.clientX, y: e.clientY });
-        window.addEventListener("mousemove", setFromEvent);
-        return () => {
-            window.removeEventListener("mousemove", setFromEvent);
-        };
-    }, []);
-    return position;
-};
     
-export default () => {
-   // const bars = data.map(({name, value}, i) => (
-   //     <g transform={`translate(${i * barWidth}, 0)`} key={name}>
-   //         <rect y={y(value)} height={height - y(value)} width={barWidth - 1} floodColor="#bbbbbb" />
-    //        <text x={barWidth / 2} y={y(value) + 3} dy=".75em">
-    //            {value}
-    //        </text>
-   ////     </g>
-    //));
+interface SvgD3Props {
+    appState: AppState
+}
 
+export default (props: SvgD3Props) => {
+    
     const pos = useMousePosition();
     const transform = `translate(${pos.x} ${pos.y})`;
+    const streams = props.appState.streams;
     
     return (
         <Chart style={
           { width: "100%"
           , height: "90vh"
         }}>
-            <Series points={data} />
+            <Series points={streams.oil.points} />
+            <Series points={streams.gas.points} />
+            <Series points={streams.water.points} />
             <g transform={transform}>
-                <Series points={data} />
+                <Series points={streams.oil.points} />
             </g>
         </Chart>
     );

@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import './App.css';
+import {generateState} from "./AppState";
 import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
 import ReactVis from "./react-vis/vis-graph"
@@ -15,8 +16,10 @@ import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
 import EchartsGraph from "./echartsForReact/echartsJS";
-
 import DraggablePoints from "./echartsForReact/DraggablePoints";
+
+const appState = generateState(50);
+
 export default () => 
   (<Router>
     <header>
@@ -40,7 +43,7 @@ export default () =>
           <div />
       </Route>
       <Route path="/react-svg-d3">
-          <SvgD3 />
+          <SvgD3 appState={appState} />
       </Route>
         <Route path="/react-vis">
             <ReactVis />
