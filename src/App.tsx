@@ -16,6 +16,7 @@ import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
 import EchartsGraph from "./echartsForReact/echartsJS";
 
+import DraggablePoints from "./echartsForReact/DraggablePoints";
 export default () => 
   (<Router>
     <header>
@@ -28,6 +29,7 @@ export default () =>
         <Link to="/Plotly">Plotly</Link>
         <Link to="/HighCharts">High Charts</Link>
         <Link to="/Echarts">Echarts</Link>
+        <Link to="/Drag">Draggable Echarts</Link>
     </header>
 
     <Switch>
@@ -57,6 +59,9 @@ export default () =>
         </Route>
         <Route path="/Echarts">
             <EchartsGraph/>
+        </Route>
+        <Route path="/Drag">
+            <DraggablePoints/>
         </Route>
     </Switch>
       

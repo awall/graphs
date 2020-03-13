@@ -1,6 +1,7 @@
 ﻿import React, {Component} from 'react';
 import '../index.css';
 import ReactEcharts from "echarts-for-react";
+import echarts from 'echarts'
 
 var symbolSize = 20;
 var data = [[15, 0], [-50, 10], [-56.5, 20], [-46.5, 30], [-22.1, 40]];
@@ -55,11 +56,76 @@ class App extends Component {
     componentDidMount() {
         this.echartsInstance = this.echartsReactRef.getEchartsInstance(); //What a stupid call....
         this.zr = this.echartsInstance.getZr();
+        
+        //kind of really awkward, but it works.
+        window.addEventListener('resize', this.updatePosition);
+        
+        this.echartsInstance.on('dataZoom', this.updatePosition)
 
-        this.zr.on('click', this.onChartClick);
-        this.zr.on('mouseMove', this.onMouseMove);
+        //I DID IT!
+        let that = this;
+        
+        setTimeout(function () {
+            
+            // Add shadow circles (which is not visible) to enable drag.
+            that.echartsInstance.setOption({
+                graphic: echarts.util.map(data, function (item, dataIndex) {
+                    return {
+                        type: 'circle',
+                        position: that.echartsInstance.convertToPixel('grid', item),
+                        shape: {
+                            cx: 0,
+                            cy: 0,
+                            r: symbolSize / 2
+                        },
+                        invisible: true,
+                        draggable: true,
+                        ondrag: echarts.util.curry(that.onPointDragging, dataIndex, that.echartsInstance),
+                        onmousemove: echarts.util.curry(that.showTooltip, dataIndex, that.echartsInstance),
+                        onmouseout: echarts.util.curry(that.hideTooltip, dataIndex, that.echartsInstance),
+                        z: 100
+                    };
+                })
+            });
+        }, 0);
     }
 
+    updatePosition() {
+        this.echartsInstance.setOption({
+            graphic: echarts.util.map(data, function (item, dataIndex) {
+                return {
+                    position: this.echartsInstance.convertToPixel('grid', item)
+                };
+            })
+        });
+    }
+
+    showTooltip(dataIndex, instance) {
+        instance.dispatchAction({
+            type: 'showTip',
+            seriesIndex: 0,
+            dataIndex: dataIndex
+        });
+    }
+
+    hideTooltip(dataIndex, instance) {
+        instance.dispatchAction({
+            type: 'hideTip'
+        });
+    }
+
+    onPointDragging(dataIndex, instance, dx, dy) {
+        data[dataIndex] = instance.convertFromPixel('grid', this.position);
+
+        // Update data
+        instance.setOption({
+            series: [{
+                id: 'a',
+                data: data
+            }]
+        });
+    }
+    
     onMouseMove = (params) => {
         let pointInPixel = [params.offsetX, params.offsetY];
         this.zr.setCursorStyle(this.echartsInstance.containPixel('grid', pointInPixel) ? 'copy' : 'default');
