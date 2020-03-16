@@ -24,6 +24,11 @@ export interface AppState {
     yearSpan: number
 }
 
+export interface AppStateAction {
+    type: string,
+    value: number,
+}
+
 export function generateState(yearSpan: number): AppState {
     function harmonic(qi: number, D: number, t: number) {
         return qi / (1 + D*t);

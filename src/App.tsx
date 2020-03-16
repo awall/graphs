@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useReducer} from 'react';
 import {
   BrowserRouter as Router
 , Switch
@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 
 import './App.css';
-import {generateState} from "./AppState";
+import {AppState, AppStateAction, generateState} from "./AppState";
 import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
 import ReactVis from "./react-vis/vis-graph"
@@ -18,54 +18,76 @@ import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
 import EchartsGraph from "./echartsForReact/echartsJS";
 import DraggablePoints from "./echartsForReact/DraggablePoints";
 
-const appState = generateState(50);
+export default () => {
+    function reducer(state: AppState, action: AppStateAction) {
+        switch (action.type) {
+            case 'moveDowntime':
+                return {
+                    ...state,
+                    streams: {
+                        ...state.streams,
+                        downtime: {
+                            ...state.streams.downtime,
+                            points: state.streams.downtime.points.map(p => (
+                                { x: new Date(p.x.getTime() + action.value),
+                                  y: p.y,
+                                })),
+                        },
+                     },
+                };
+            default:
+                throw new Error();
+        }
+    }
+    
+    const [appState, dispatch] = useReducer(reducer, generateState(50));
+    
+    return <Router>
+        <header>
+            <Link to="/bizcharts">BizCharts</Link>
+            <Link to="/plottable">Plottable</Link>
+            <Link to="/react-svg-d3">React SVG + D3</Link>
+            <Link to="/react-vis">React-Vis</Link>
+            <Link to="/vega">Vega</Link>
+            <Link to="/RumbleCharts">Rumble Charts</Link>
+            <Link to="/Plotly">Plotly</Link>
+            <Link to="/HighCharts">High Charts</Link>
+            <Link to="/Echarts">Echarts</Link>
+            <Link to="/Drag">Draggable Echarts</Link>
+        </header>
 
-export default () => 
-  (<Router>
-    <header>
-      <Link to="/bizcharts">BizCharts</Link>
-      <Link to="/plottable">Plottable</Link>
-      <Link to="/react-svg-d3">React SVG + D3</Link>
-        <Link to="/react-vis">React-Vis</Link>
-        <Link to="/vega">Vega</Link>
-        <Link to="/RumbleCharts">Rumble Charts</Link>
-        <Link to="/Plotly">Plotly</Link>
-        <Link to="/HighCharts">High Charts</Link>
-        <Link to="/Echarts">Echarts</Link>
-        <Link to="/Drag">Draggable Echarts</Link>
-    </header>
+        <Switch>
+            <Route path="/bizcharts">
+                <BizCharts/>
+            </Route>
+            <Route path="/plottable">
+                <div/>
+            </Route>
+            <Route path="/react-svg-d3">
+                <SvgD3 appState={appState} onDrag={(timeInMs: number) => dispatch({type: 'moveDowntime', value: timeInMs})} />
+            </Route>
+            <Route path="/react-vis">
+                <ReactVis/>
+            </Route>
+            <Route path="/vega">
+                <VegaGraph/>
+            </Route>
+            <Route path="/RumbleCharts">
+                <RumbleChartsGraph/>
+            </Route>
+            <Route path="/Plotly">
+                <PlotlyGraph/>
+            </Route>
+            <Route path="/HighCharts">
+                <HighChartsGraph/>
+            </Route>
+            <Route path="/Echarts">
+                <EchartsGraph/>
+            </Route>
+            <Route path="/Drag">
+                <DraggablePoints/>
+            </Route>
+        </Switch>
 
-    <Switch>
-      <Route path="/bizcharts">
-          <BizCharts />
-      </Route>
-      <Route path="/plottable">
-          <div />
-      </Route>
-      <Route path="/react-svg-d3">
-          <SvgD3 appState={appState} />
-      </Route>
-        <Route path="/react-vis">
-            <ReactVis />
-        </Route>
-        <Route path="/vega">
-            <VegaGraph/>
-        </Route>
-        <Route path="/RumbleCharts">
-            <RumbleChartsGraph/>
-        </Route>
-        <Route path="/Plotly">
-            <PlotlyGraph/>
-        </Route>
-        <Route path="/HighCharts">
-            <HighChartsGraph/>
-        </Route>
-        <Route path="/Echarts">
-            <EchartsGraph/>
-        </Route>
-        <Route path="/Drag">
-            <DraggablePoints/>
-        </Route>
-    </Switch>
-      
-  </Router>)
+    </Router>
+}
