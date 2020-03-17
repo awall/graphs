@@ -15,8 +15,7 @@ import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
-import EchartsGraph from "./echartsForReact/echartsJS";
-import DraggablePoints from "./echartsForReact/DraggablePoints";
+import {EchartsProtoType} from "./echartsForReact/EChartsProtoType";
 
 export default () => {
     function reducer(state: AppState, action: AppStateAction) {
@@ -40,7 +39,7 @@ export default () => {
         }
     }
     
-    const [appState, dispatch] = useReducer(reducer, generateState(50));
+    const [appState, dispatch] = useReducer(reducer, generateState(15));
     
     return <Router>
         <header>
@@ -53,7 +52,6 @@ export default () => {
             <Link to="/Plotly">Plotly</Link>
             <Link to="/HighCharts">High Charts</Link>
             <Link to="/Echarts">Echarts</Link>
-            <Link to="/Drag">Draggable Echarts</Link>
         </header>
 
         <Switch>
@@ -82,10 +80,7 @@ export default () => {
                 <HighChartsGraph/>
             </Route>
             <Route path="/Echarts">
-                <EchartsGraph/>
-            </Route>
-            <Route path="/Drag">
-                <DraggablePoints/>
+                <EchartsProtoType appState={appState}/>
             </Route>
         </Switch>
 

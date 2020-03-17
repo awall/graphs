@@ -60,7 +60,7 @@ class App extends Component {
         //kind of really awkward, but it works.
         window.addEventListener('resize', this.updatePosition);
         
-        this.echartsInstance.on('dataZoom', this.updatePosition)
+        this.echartsInstance.on('dataZoom', this.updatePosition);
 
         //I DID IT!
         let that = this;
