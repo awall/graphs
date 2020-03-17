@@ -10,6 +10,7 @@ import './App.css';
 import {AppState, AppStateAction, generateState} from "./AppState";
 import BizCharts from "./BizCharts";
 import SvgD3 from "./SvgD3";
+import SvgD32 from "./SvgD32";
 import ReactVis from "./react-vis/vis-graph"
 import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
@@ -46,6 +47,7 @@ export default () => {
             <Link to="/bizcharts">BizCharts</Link>
             <Link to="/plottable">Plottable</Link>
             <Link to="/react-svg-d3">React SVG + D3</Link>
+            <Link to="/react-svg-d32">React SVG Components</Link>
             <Link to="/react-vis">React-Vis</Link>
             <Link to="/vega">Vega</Link>
             <Link to="/RumbleCharts">Rumble Charts</Link>
@@ -63,6 +65,9 @@ export default () => {
             </Route>
             <Route path="/react-svg-d3">
                 <SvgD3 appState={appState} onDrag={(timeInMs: number) => dispatch({type: 'moveDowntime', value: timeInMs})} />
+            </Route>
+            <Route path="/react-svg-d32">
+                <SvgD32 appState={appState} onDrag={(timeInMs: number) => dispatch({type: 'moveDowntime', value: timeInMs})} />
             </Route>
             <Route path="/react-vis">
                 <ReactVis/>
