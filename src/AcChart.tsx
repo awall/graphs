@@ -1,7 +1,6 @@
-import React, {FunctionComponent, ReactElement, useContext, useEffect, useRef, useState} from 'react';
+import React, {FunctionComponent, MutableRefObject, ReactElement, useContext, useEffect, useRef, useState} from 'react';
 import {scaleLinear, scaleTime} from 'd3-scale';
 import {path} from "d3-path";
-import {Point} from "./AppState";
 
 export interface AcPoint<X,Y> { x: X, y: Y }
 
@@ -16,8 +15,9 @@ export interface AcSeriesProps<X, Y>
     x: AcDomainDef<X>,
     y: AcDomainDef<Y>,
     interpolation?: Interpolation,
-    dashArray?: string | number;
-    dashOffset?: string | number;
+    dashArray?: string | number,
+    dashOffset?: string | number,
+    width?: number,
 }
 
 interface AcPositioned {
@@ -53,6 +53,9 @@ export interface AcBottomAxisProps<T> extends AcHorizontalAxisProps<T> {
 export interface AcPlotProps extends AcPositioned {
 }
 
+export interface AcLayoutProps extends AcPositioned {
+}
+
 export interface AcChartProps {
     width: number,
     height: number,
@@ -62,26 +65,52 @@ export interface AcChartProps {
 
 interface Position {
     top: number,
-    bottom: number,
     left: number,
-    right: number,
+    width: number,
+    height: number,
 }
 
 const PositionContext = React.createContext({
     top: 0,
-    bottom: 0,
     left: 0,
-    right: 0,
+    width: 0,
+    height: 0,
 });
 
-export function AcSeries<X, Y>(props: AcSeriesProps<X, Y>) {
+const SvgRefContext = React.createContext({
+    current: null,
+});
+
+export const useAcPosition = () => {
     const pos = useContext(PositionContext);
+    const ref = useContext(SvgRefContext);
+    
+    let rect = {
+        top: 0,
+        left: 0,
+        width: 0,
+        height: 0,
+    }; 
+      
+    if (ref.current) {
+        // @ts-ignore
+        rect = ref.current.getBoundingClientRect();
+    }
+    
+    return {
+        ...pos,
+        chart: rect,
+    };
+};
+
+export function AcSeries<X, Y>(props: AcSeriesProps<X, Y>) {
+    const pos = useAcPosition();
     
     // Fix this in the real code.
     // @ts-ignore
-    const xaxis = scaleTime().domain([props.x.min, props.x.max]).range([pos.left, pos.right]);
+    const xaxis = scaleTime().domain([props.x.min, props.x.max]).range([0, pos.width]);
     // @ts-ignore
-    const yaxis = scaleLinear().domain([props.y.min, props.y.max]).range([pos.bottom, pos.top]);
+    const yaxis = scaleLinear().domain([props.y.min, props.y.max]).range([pos.height, 0]);
     
     const [head, ...tail] = props.points;
     const pat = path();
@@ -104,7 +133,7 @@ export function AcSeries<X, Y>(props: AcSeriesProps<X, Y>) {
 
     const dashes = props.dashArray || 0;
     const offset = props.dashOffset || 0;
-    return <path d={pat.toString()} fill="none" stroke={props.color} strokeWidth="1" strokeDasharray={dashes} strokeDashoffset={offset} />;
+    return <path d={pat.toString()} fill="none" stroke={props.color} strokeWidth={props.width || 1} strokeDasharray={dashes} strokeDashoffset={offset} />;
 }
 
 export function AcLeftAxis<X>(props: AcLeftAxisProps<X>) {
@@ -112,16 +141,15 @@ export function AcLeftAxis<X>(props: AcLeftAxisProps<X>) {
     const title = props.title;
 
     const pos = positionHack(props.r, props.c);
-    const height = pos.bottom - pos.top;
+    const height = pos.height;
     
     // Fix this in the real code.
     // @ts-ignore
     const axis = scaleLinear().domain([props.y.min, props.y.max]).range([height, 0]);
-    // @ts-ignore
-    const formatter = props.formatter || ((x: X) => x.toString());
-    
+    const formatter = props.formatter || (x => `${x}`);
+
     // <line x1="0" y1="0" x2="0" y2={height} stroke="black" />
-    return <g transform={`translate(${pos.right} ${pos.top})`}>
+    return <g transform={`translate(${pos.left + pos.width} ${pos.top})`}>
         { ticks.map(t =>
             <g transform={`translate(0 ${axis(t)})`}>
                 <line x1="-8" y1="0" x2="0" y2="0" stroke="black" />
@@ -139,13 +167,12 @@ export function AcRightAxis<X>(props: AcRightAxisProps<X>) {
     const title = props.title;
 
     const pos = positionHack(props.r, props.c);
-    const height = pos.bottom - pos.top;
-
+    const height = pos.height;
+    
     // Fix this in the real code.
     // @ts-ignore
     const axis = scaleLinear().domain([props.y.min, props.y.max]).range([height, 0]);
-    // @ts-ignore
-    const formatter = props.formatter || ((x: X) => x.toString());
+    const formatter = props.formatter || (x => `${x}`);
     
     // <line x1="0" y1="0" x2="0" y2={height} stroke="black" />
     return <g transform={`translate(${pos.left} ${pos.top})`}>
@@ -166,13 +193,12 @@ export function AcBottomAxis<X>(props: AcBottomAxisProps<X>) {
     const title = props.title;
 
     const pos = positionHack(props.r, props.c);
-    const width = pos.right - pos.left;
+    const width = pos.width;
 
     // Fix this in the real code.
     // @ts-ignore
     const axis = scaleTime().domain([props.x.min, props.x.max]).range([0, width]);
-    // @ts-ignore
-    const formatter = props.formatter || ((x: X) => x.toString());
+    const formatter = props.formatter || (x => `${x}`);
 
     //<line x1="0" y1="0" x2={width} y2="0" stroke="black" />
     return <g transform={`translate(${pos.left} ${pos.top})`}>
@@ -188,16 +214,37 @@ export function AcBottomAxis<X>(props: AcBottomAxisProps<X>) {
     </g>;
 }
 
-export const AcPlot: FunctionComponent<AcPlotProps> = ({
-    r,
-    c,
-    children
+export const AcPlot: FunctionComponent<AcPlotProps> = (props) => {
+    const pos = positionHack(props.r, props.c);
+    const clipPathId = `clipPath${props.r}+${props.c}`;    
+    
+    return <AcLayout {...props}>
+        <g>
+            <defs>
+                <clipPath id={clipPathId}>
+                    <rect width={pos.width} height={pos.height} />
+                </clipPath>
+            </defs>
+        
+            <rect x={0} width={pos.width} y={0} height={pos.height} stroke="black" fill="none" strokeWidth={1} />
+            <g clipPath={`url(#${clipPathId})`}>
+                { props.children }
+            </g>
+        </g>
+    </ AcLayout>;
+};
+
+export const AcLayout: FunctionComponent<AcLayoutProps> = ({
+   r,
+   c,
+   children
 }) => {
     const pos = positionHack(r, c);
-        
+
     return <PositionContext.Provider value={pos}>
-        <rect x={pos.left} width={pos.right - pos.left} y={pos.top} height={pos.bottom - pos.top} stroke="black" fill="none" strokeWidth={1} />
-        { React.Children.toArray(children) }
+        <g transform={`translate(${pos.left} ${pos.top})`}>
+            { React.Children.toArray(children) }
+        </g>
     </ PositionContext.Provider>;
 };
 
@@ -214,10 +261,14 @@ export const AcChart: FunctionComponent<AcChartProps> = ({
     //        const c = props.c;
     //    }
     //});
+
+    const ref = useRef(null);
     
     const pos = positionHack(2,3);
-    return <svg width={pos.right} height={pos.bottom}>
+    return <svg ref={ref} width={pos.left + pos.width} height={pos.top + pos.height}>
+        <SvgRefContext.Provider value={ref}>
         { React.Children.toArray(children) }
+        </SvgRefContext.Provider>
     </svg>;
 };
 
@@ -230,36 +281,37 @@ function positionHack(r: number, c: number): Position {
     
     let pos = {
         top: 10, 
-        bottom: 10,
-        left: 10,
-        right: 10,
+        left: 0,
+        width: 0,
+        height: 0,
     };
 
     if (r >= 0) {
-        pos.bottom = pos.top + 300;
+        pos.height = 200;
     }
     if (r >= 1) {
-        pos.top = pos.bottom + 21;
-        pos.bottom = pos.top + 600;
+        pos.top += pos.height + 21;
+        pos.height = 400;
     }
     if (r >= 2) {
-        pos.top = pos.bottom + 1;
-        pos.bottom = pos.top + axis;
+        pos.top += pos.height + 1;
+        pos.height = axis;
     }
+    
     if (c >= 0) {
-        pos.right = pos.left + axis;
+        pos.width = axis;
     }
     if (c >= 1) {
-        pos.left = pos.right + 1;
-        pos.right = pos.left + 900;
+        pos.left += pos.width + 1;
+        pos.width = 900;
     }
     if (c >= 2) {
-        pos.left = pos.right + 1;
-        pos.right = pos.left + axis;
+        pos.left += pos.width + 1;
+        pos.width = axis;
     }
     if (c >= 3) {
-        pos.left = pos.right + 1;
-        pos.right = pos.left + axis;
+        pos.left += pos.width + 1;
+        pos.width = axis;
     }
     return pos;
 }

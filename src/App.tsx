@@ -40,7 +40,7 @@ export default () => {
         }
     }
     
-    const [appState, dispatch] = useReducer(reducer, generateState(15));
+    const [appState, dispatch] = useReducer(reducer, generateState(50));
     
     return <Router>
         <header>
@@ -67,7 +67,7 @@ export default () => {
                 <SvgD3 appState={appState} onDrag={(timeInMs: number) => dispatch({type: 'moveDowntime', value: timeInMs})} />
             </Route>
             <Route path="/react-svg-d32">
-                <SvgD32 appState={appState} onDrag={(timeInMs: number) => dispatch({type: 'moveDowntime', value: timeInMs})} />
+                <SvgD32 appState={appState} />
             </Route>
             <Route path="/react-vis">
                 <ReactVis/>
