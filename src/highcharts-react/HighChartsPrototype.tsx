@@ -26,9 +26,7 @@ interface pointEventArgs{
 
 export const HighChartsGraph = (props : props) => {
 
-    const [highChartsProps, updateHighcharts] = React.useState(props.highChartProps);
-    const [currentHoverPoint, updateHoverPoint] = React.useState<dispPoint>({x : 0, y : 0});
-    
+    const [highChartsProps] = React.useState(props.highChartProps);
     const downTimeRef = useRef<any>(null);
     
     const [shadow, setShadow] = React.useState<Point[]>(() => {
@@ -314,6 +312,35 @@ export const HighChartsGraph = (props : props) => {
         }
     };
 
+    React.useEffect(() => {
+
+        ['mousemove', 'touchmove', 'touchstart'].forEach(function (eventType) {
+            downTimeRef.current.container.current.addEventListener(
+                eventType,
+                function (e : any) {
+                    var chart,
+                        point,
+                        i,
+                        event;
+
+                    for (i = 0; i < Highcharts.charts.length; i = i + 1) {
+                        let chart : any = Highcharts.charts[i];
+                        // Find coordinates within the chart
+                        let event : any = chart.pointer.normalize(e);
+                        // Get the hovered point
+                        let point : any = chart.series[0].searchPoint(event, true);
+
+                        if (point) {
+                            point.highlight(e);
+                        }
+                    }
+                }
+            );
+        });
+        
+    }, []);
+    
+    
     return <div>
         <div id='graph2' onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
             <HighchartsReact ref={downTimeRef} highcharts={Highcharts} options={graph2Options} {...highChartsProps} allowChartUpdate={true}>
