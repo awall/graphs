@@ -2,12 +2,12 @@
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
 import {AppState, Point} from '../AppState'
-import { number } from 'prop-types';
-import { toNumber } from 'vega';
+import data from 'highcharts/modules/data'
 
 require("highcharts/modules/draggable-points")(Highcharts);
 require("highcharts/modules/accessibility")(Highcharts);
 require("highcharts/modules/boost")(Highcharts);
+require("highcharts/modules/data");
 
 interface props {
     appState : AppState,
@@ -30,6 +30,7 @@ export const HighChartsGraph = (props : props) => {
     const [currentHoverPoint, updateHoverPoint] = React.useState<dispPoint>({x : 0, y : 0});
     
     const downTimeRef = useRef<any>(null);
+    
     const [shadow, setShadow] = React.useState<Point[]>(() => {
         
         let newPoints : Point[] = new Array<Point>();
@@ -42,58 +43,16 @@ export const HighChartsGraph = (props : props) => {
         return newPoints;}
    );
     
-    function onPointed(event : Event){
-        
-        //@ts-ignore
-        const point : Highcharts.Point = this;
-
-        //@ts-ignore
-        point.update({
-            marker : { 
-                enabled : true,
-                radius : 40
-            },
-        })
-    
-         
-        //window.alert("off");
-    
-    }
-    const onPoint = (args : pointEventArgs) => {
-       
-        const point = args.target;
-        updateHoverPoint({x : point.x, y : point.y});  
-        
-
-        //window.alert("on");
-    } ;
-
-    function offPoint(event : Event){
-       
-          //@ts-ignore
-          const point : Highcharts.Point = this;
-
-         point.update({
-             marker : { 
-                 enabled : false,
-             }
-         })
-
-         point.series.chart.redraw();
-    } 
     
     //You could make this modular, and compose the object instead of making it 1 large statement.
     const graph1Options = {
         
-        chart: {             
+        chart: {   
+            type: 'line',
             animation: false,
             zoomType: 'xy',
         },
-
-        credits: {
-            enabled: false
-        },
-
+        
         title: {
             text:"",
         },
@@ -106,7 +65,7 @@ export const HighChartsGraph = (props : props) => {
                 month: '%b %y'
             },
             
-            tickAmount : props.appState.yearSpan, 
+            tickAmount : props.appState.yearSpan,
         },
 
         yAxis: [
@@ -135,6 +94,7 @@ export const HighChartsGraph = (props : props) => {
                     color: 'red',
                 },
             },
+          
         },
         { 
             labels: {  
@@ -150,55 +110,51 @@ export const HighChartsGraph = (props : props) => {
             },
             opposite: true,
         }],
-
-        plotOptions: {
-            series: {
-                allowPointSelect: false,
-                marker: {
-                    enabled : false,
-                },
-                animation: false,
-                stickyTracking: false,
-            },
-            line: {
-                cursor: 'ns-resize'
-            },
-    
-        },
-
-        tooltip: {
-            shared: true,
-            crosshairs: true
-        },
-
+        
         legend : {
             align : 'right',
             verticalAlign: 'top',
             layout: 'horizontal',
         },
 
+        plotOptions: {
+            series : {
+                tooltip: {
+                    followPointer: true,
+                    stickOnContact: true,
+                },
+                
+                states:{
+                    
+                }
+            },
+            
+        },
+
+        tooltip: {
+            shared: true,
+            crosshairs: true,
+        },
+        
         series: [
         {
             id:'Oil',
             name: props.appState.streams.oil.name,
-            type: 'line',
-            data: props.appState.streams.oil.points,
+            data:  props.appState.streams.oil.points.map(i => {return {x : i.x.getTime(), y : i.y}}),
             color: 'green',
-            yAxis : 0, //index of the axis 
+            yAxis : 0, //index of the axis ,
         }, 
         {
             id:'Gas',
             name: props.appState.streams.gas.name,
-            type: 'line',
-            data: props.appState.streams.gas.points,
+            data:  props.appState.streams.gas.points.map(i => {return {x : i.x.getTime(), y : i.y}}),
             color: 'red',
             yAxis : 1,
         },  
         {
             id:'Water',
             name: props.appState.streams.water.name,
-            type: 'line',
-            data: props.appState.streams.water.points,
+            data: props.appState.streams.water.points.map(i => {return {x : i.x.getTime(), y : i.y}}),
             color: 'blue',
             yAxis : 2,
         }]
@@ -221,7 +177,7 @@ export const HighChartsGraph = (props : props) => {
         },
 
         xAxis: {
-            type: 'datetime',  
+            type: 'datetime',
             min : Date.UTC(2000, 0, 0),
             max : Date.UTC(2005, 0, 0),
         },
@@ -255,11 +211,7 @@ export const HighChartsGraph = (props : props) => {
                 cursor: 'ns-resize'
             }
         },
-
-        tooltip: {
-            valueDecimals: 2
-        },
-
+        
         legend : {
             align : 'right',
             verticalAlign: 'top',
@@ -271,7 +223,7 @@ export const HighChartsGraph = (props : props) => {
             id:'DownTime',
             name: props.appState.streams.downtime.name,
             type: 'line',
-            step: 'right',
+            step: 'center',
             data: props.appState.streams.downtime.points,
             color: 'black',
             yAxis : 0, //index of the axis 
@@ -281,122 +233,95 @@ export const HighChartsGraph = (props : props) => {
                 id:'Shadow',
                 name: 'Shadow',
                 type: 'line',
-                step: 'right',
+                step: 'center',
                 data: shadow,
                 color: 'black',
                 yAxis : 0, //index of the axis,
                 opacity: 100,
-                dashStyle: 'ShortDot'
+                dashStyle: 'ShortDot',
+                showInLegend: false,
             },]
     };
-
-    const moveGraphRight = (e : any) => {
-
-        let newShadow = shadow.map(x => x);
-        
-        for(let i = 0; i < newShadow.length; i++){
-            newShadow[i].x = new Date(newShadow[i].x.getFullYear(), newShadow[i].x.getMonth() + 1, newShadow[i].x.getDay());
-        }
-        
-        setShadow(newShadow);
-        
-        let chart = downTimeRef.current.chart as Highcharts.Chart;
-        
-        chart.series[1].update({
-            id:'Shadow',
-            name: 'Shadow',
-            type: 'line',
-            step: 'right',
-            color: 'black',
-            yAxis : 0, //index of the axis,
-            opacity: 100,
-            dashStyle: 'ShortDot'
-        });
-    };
-
+    
     const [currX, setCurrX] = React.useState<number>(0);
     const [mouseDown, setMouseDown] = React.useState<boolean>(false);
     
     const onMouseDown = (event : React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        
-        /*if(!mouseDown) {
-            
-            setCurrX(event.screenX);
-            setMouseDown(true);
-
-            let chart = downTimeRef.current.chart as Highcharts.Chart;
-            
-            let value= shadow.map(x => {return {...x, x: new Date(x.x.getFullYear(), x.x.getMonth() +1, x.x.getDay())}});
-
-            setShadow(value);
-            
-            chart.series[1].update({
-                id:'shadow',
-                name: 'shadow',
-                type: 'line',
-                color: 'black',
-                yAxis : 0, //index of the axis 
-                dashStyle: 'ShortDot'
-            });
-        }*/
+        setMouseDown(true);
+        setCurrX(event.screenX);
     };
     
     const onMouseUp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         
-        if(mouseDown) {
-            
-            setMouseDown(false);
-            /*let chart = downTimeRef.current.chart as Highcharts.Chart;
-            
-            if(shadow !== undefined) {
-                props.appState.streams.downtime.points = shadow.map(item => {
-                    return {x: new Date(item.x), y: item.y!}
-                });
-
-                chart.series[1].remove(true);
-            }*/
-        }
+        setMouseDown(false);
+        
+        let chart = downTimeRef.current.chart as Highcharts.Chart;
+        
+        props.appState.streams.downtime.points = shadow.map(x => {return {x : x.x, y : x.y}});
+        chart.series[1].update({
+            id:'Shadow',
+            name: 'Shadow',
+            type: 'line',
+            step: 'center',
+            color: 'black',
+            yAxis : 0, //index of the axis,
+            animation: false,
+        });
+        
     };
 
     const onMouseMove = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
-        /*if(mouseDown){
-            
-            let chart = downTimeRef.current.chart as Highcharts.Chart;
-            let newX = event.screenX;
-            
-            let value = chart.xAxis[0].toValue(currX);
-            let value2 = chart.xAxis[0].toValue(newX);
-            
-            let diff = value2 - value; 
-            
-            if(shadow != undefined) {
-                
-                shadow?.forEach(item => item.x += diff);
+        if(mouseDown){
 
-                if(chart.series[1] != undefined) {
-                    chart.series[1].update({
-                        type: 'line',
-                        data: shadow,
-                        color: 'purple',
-                    }, true);
-                }
+            let chart = downTimeRef.current.chart as Highcharts.Chart;
+            
+            let oldXVal = chart.xAxis[0].toValue(currX);
+            let newValue = chart.xAxis[0].toValue(event.screenX);
+            setCurrX(event.screenX);
+            
+            let diff = newValue - oldXVal;
+            
+            let newShadow = shadow.map(x => x);
+
+            for(let i = 0; i < newShadow.length; i++){
+                newShadow[i].x = new Date(newShadow[i].x.getTime() + diff);
             }
-        }*/
+
+            setShadow(newShadow);
+            
+            chart.series[1].update({
+                id:'Shadow',
+                name: 'Shadow',
+                type: 'line',
+                step: 'center',
+                color: 'black',
+                yAxis : 0, //index of the axis,
+                dashStyle: 'ShortDot',
+                animation: false,
+            });
+        }
+        else {
+
+            for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
+                
+                let chart = Highcharts.charts[i];
+                
+                // Get the hovered point
+                // @ts-ignore
+                let point = chart.series[0].searchPoint(true);
+            }
+        }
     };
 
     return <div>
         <div id='graph2' onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
             <HighchartsReact ref={downTimeRef} highcharts={Highcharts} options={graph2Options} {...highChartsProps} allowChartUpdate={true}>
             </HighchartsReact>
-            <button onClick={moveGraphRight}>Move 1 Month Right</button>
         </div> 
         <div id='graph1'>
             <HighchartsReact highcharts={Highcharts} options={graph1Options} {...highChartsProps} allowChartUpdate={true}>
             </HighchartsReact>
-        </div>
-        <div>
-            {"x : " + currentHoverPoint!.x}
         </div>
     </div>
 };
