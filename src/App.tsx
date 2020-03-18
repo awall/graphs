@@ -14,11 +14,11 @@ import ReactVis from "./react-vis/vis-graph"
 import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
-import {HighChartsGraph} from "./highcharts-react/highchartsGraph";
+import {HighChartsGraph} from "./highcharts-react/HighChartsPrototype";
 import EchartsGraph from "./echartsForReact/echartsJS";
 import DraggablePoints from "./echartsForReact/DraggablePoints";
 
-const appState = generateState(50);
+const appState = generateState(3);
 
 export default () => 
   (<Router>
@@ -42,9 +42,6 @@ export default () =>
       <Route path="/plottable">
           <div />
       </Route>
-      <Route path="/react-svg-d3">
-          <SvgD3 appState={appState} />
-      </Route>
         <Route path="/react-vis">
             <ReactVis />
         </Route>
@@ -58,7 +55,7 @@ export default () =>
             <PlotlyGraph/>
         </Route>
         <Route path="/HighCharts">
-            <HighChartsGraph/>
+            <HighChartsGraph appState={appState}/>
         </Route>
         <Route path="/Echarts">
             <EchartsGraph/>
