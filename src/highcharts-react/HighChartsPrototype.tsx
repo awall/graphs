@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useRef} from 'react';
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
-import {AppState} from '../AppState'
+import {AppState, Point} from '../AppState'
 import { number } from 'prop-types';
 import { toNumber } from 'vega';
 
@@ -30,7 +30,18 @@ export const HighChartsGraph = (props : props) => {
     const [currentHoverPoint, updateHoverPoint] = React.useState<dispPoint>({x : 0, y : 0});
     
     const downTimeRef = useRef<any>(null);
-
+    const [shadow, setShadow] = React.useState<Point[]>(() => {
+        
+        let newPoints : Point[] = new Array<Point>();
+        
+        for(let i =0 ; i < props.appState.streams.downtime.points.length; i++){
+            let oldVal = props.appState.streams.downtime.points[i];
+            newPoints.push({x : oldVal.x, y: oldVal.y});
+        }
+        
+        return newPoints;}
+   );
+    
     function onPointed(event : Event){
         
         //@ts-ignore
@@ -148,15 +159,8 @@ export const HighChartsGraph = (props : props) => {
                 },
                 animation: false,
                 stickyTracking: false,
-                        point : {
-                events: {
-                    mouseOver: onPointed,
-                    mouseOut : offPoint,                    
-                }  
-            },
             },
             line: {
-                
                 cursor: 'ns-resize'
             },
     
@@ -267,69 +271,128 @@ export const HighChartsGraph = (props : props) => {
             id:'DownTime',
             name: props.appState.streams.downtime.name,
             type: 'line',
-            step: true,
+            step: 'right',
             data: props.appState.streams.downtime.points,
             color: 'black',
             yAxis : 0, //index of the axis 
-            dashStyle: 'ShortDot'
-        }, ]
+            dashStyle: 'black'
+        },
+            {
+                id:'Shadow',
+                name: 'Shadow',
+                type: 'line',
+                step: 'right',
+                data: shadow,
+                color: 'black',
+                yAxis : 0, //index of the axis,
+                opacity: 100,
+                dashStyle: 'ShortDot'
+            },]
     };
 
     const moveGraphRight = (e : any) => {
+
+        let newShadow = shadow.map(x => x);
         
-        props.appState.streams.downtime.points.forEach(x => x.x.setMonth(x.x.getMonth() + 1));
+        for(let i = 0; i < newShadow.length; i++){
+            newShadow[i].x = new Date(newShadow[i].x.getFullYear(), newShadow[i].x.getMonth() + 1, newShadow[i].x.getDay());
+        }
+        
+        setShadow(newShadow);
         
         let chart = downTimeRef.current.chart as Highcharts.Chart;
         
-        chart.series[0].update({
-            id:'DownTime',
-            name: props.appState.streams.downtime.name,
-            type: 'line', 
+        chart.series[1].update({
+            id:'Shadow',
+            name: 'Shadow',
+            type: 'line',
+            step: 'right',
             color: 'black',
-            yAxis : 0, //index of the axis 
+            yAxis : 0, //index of the axis,
+            opacity: 100,
             dashStyle: 'ShortDot'
         });
-    }
+    };
 
     const [currX, setCurrX] = React.useState<number>(0);
-
     const [mouseDown, setMouseDown] = React.useState<boolean>(false);
-
     
-    const onMouseDown = (e : any) => {
-        setMouseDown(true);
-
-        let chart = downTimeRef.current.chart as Highcharts.Chart;
-        let shadow = chart.series[0];
-        chart.series[0].setState("inactive");
-
+    const onMouseDown = (event : React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         
-      
+        /*if(!mouseDown) {
+            
+            setCurrX(event.screenX);
+            setMouseDown(true);
+
+            let chart = downTimeRef.current.chart as Highcharts.Chart;
+            
+            let value= shadow.map(x => {return {...x, x: new Date(x.x.getFullYear(), x.x.getMonth() +1, x.x.getDay())}});
+
+            setShadow(value);
+            
+            chart.series[1].update({
+                id:'shadow',
+                name: 'shadow',
+                type: 'line',
+                color: 'black',
+                yAxis : 0, //index of the axis 
+                dashStyle: 'ShortDot'
+            });
+        }*/
     };
     
-    const onMouseUp = (e : any) => {
-        setMouseDown(false);
-        let chart = downTimeRef.current.chart as Highcharts.Chart;
-        let shadow = chart.series[0];
-        chart.series[0].setState("inactive");
+    const onMouseUp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        
+        if(mouseDown) {
+            
+            setMouseDown(false);
+            /*let chart = downTimeRef.current.chart as Highcharts.Chart;
+            
+            if(shadow !== undefined) {
+                props.appState.streams.downtime.points = shadow.map(item => {
+                    return {x: new Date(item.x), y: item.y!}
+                });
+
+                chart.series[1].remove(true);
+            }*/
+        }
     };
 
     const onMouseMove = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
-        if(mouseDown){
+        /*if(mouseDown){
+            
+            let chart = downTimeRef.current.chart as Highcharts.Chart;
+            let newX = event.screenX;
+            
+            let value = chart.xAxis[0].toValue(currX);
+            let value2 = chart.xAxis[0].toValue(newX);
+            
+            let diff = value2 - value; 
+            
+            if(shadow != undefined) {
+                
+                shadow?.forEach(item => item.x += diff);
 
-
-        }
+                if(chart.series[1] != undefined) {
+                    chart.series[1].update({
+                        type: 'line',
+                        data: shadow,
+                        color: 'purple',
+                    }, true);
+                }
+            }
+        }*/
     };
 
     return <div>
         <div id='graph2' onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseMove={onMouseMove}>
-            <HighchartsReact ref={downTimeRef} highcharts={Highcharts} options={graph2Options} {...highChartsProps} oneToOne={false}>
+            <HighchartsReact ref={downTimeRef} highcharts={Highcharts} options={graph2Options} {...highChartsProps} allowChartUpdate={true}>
             </HighchartsReact>
             <button onClick={moveGraphRight}>Move 1 Month Right</button>
         </div> 
         <div id='graph1'>
-            <HighchartsReact highcharts={Highcharts} options={graph1Options} {...highChartsProps} oneToOne={false}>
+            <HighchartsReact highcharts={Highcharts} options={graph1Options} {...highChartsProps} allowChartUpdate={true}>
             </HighchartsReact>
         </div>
         <div>
