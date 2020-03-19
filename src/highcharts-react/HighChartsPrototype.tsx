@@ -28,6 +28,7 @@ export const HighChartsGraph = (props : props) => {
 
     const [highChartsProps] = React.useState(props.highChartProps);
     const downTimeRef = useRef<any>(null);
+    const volumesRef = useRef<any>(null);
     
     const [shadow, setShadow] = React.useState<Point[]>(() => {
         
@@ -55,6 +56,10 @@ export const HighChartsGraph = (props : props) => {
             text:"",
         },
 
+        boost: {
+            useGPUTranslations: true
+        },
+        
         xAxis: {
 
             type: 'datetime',
@@ -117,20 +122,17 @@ export const HighChartsGraph = (props : props) => {
 
         plotOptions: {
             series : {
-                tooltip: {
-                    followPointer: true,
-                    stickOnContact: true,
+                marker : {
+                    enabled: false,
                 },
-                
-                states:{
-                    
-                }
+                animation: false,
+                boostThreshold : 10,
+                turboThreshold : 1000000
             },
-            
         },
 
         tooltip: {
-            shared: true,
+            split: true,
             crosshairs: true,
         },
         
@@ -169,6 +171,10 @@ export const HighChartsGraph = (props : props) => {
         credits: {
             enabled: false
         },
+        
+        boost: {
+            useGPUTranslations: true
+        },
 
         title: {
             text: 'Highcharts Prototype'
@@ -177,7 +183,7 @@ export const HighChartsGraph = (props : props) => {
         xAxis: {
             type: 'datetime',
             min : Date.UTC(2000, 0, 0),
-            max : Date.UTC(2005, 0, 0),
+            max : Date.UTC(2030, 0, 0),
         },
 
         yAxis: [
@@ -202,12 +208,20 @@ export const HighChartsGraph = (props : props) => {
                     enabled : false,
                 },
                 animation: false,
-                stickyTracking: false,          
+                stickyTracking: false,
+                boostThreshold : 10,
+                turboThreshold : 1000000
             },
             line: {
                 
                 cursor: 'ns-resize'
             }
+        },
+        
+        tooltip:{
+            crosshairs: true,
+            allignment: 'left',
+            animation: false,
         },
         
         legend : {
@@ -311,24 +325,19 @@ export const HighChartsGraph = (props : props) => {
             }
         }
     };
-
+    
     React.useEffect(() => {
 
         ['mousemove', 'touchmove', 'touchstart'].forEach(function (eventType) {
             downTimeRef.current.container.current.addEventListener(
                 eventType,
                 function (e : any) {
-                    var chart,
-                        point,
-                        i,
-                        event;
-
-                    for (i = 0; i < Highcharts.charts.length; i = i + 1) {
-                        let chart : any = Highcharts.charts[i];
+                    for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
+                        let chart: any = Highcharts.charts[i];
                         // Find coordinates within the chart
-                        let event : any = chart.pointer.normalize(e);
+                        let event: any = chart.pointer.normalize(e);
                         // Get the hovered point
-                        let point : any = chart.series[0].searchPoint(event, true);
+                        let point: any = chart.series[0].searchPoint(event, true);
 
                         if (point) {
                             point.highlight(e);
@@ -336,7 +345,28 @@ export const HighChartsGraph = (props : props) => {
                     }
                 }
             );
+            
+            volumesRef.current.container.current.addEventListener(eventType,
+                
+                function (e : any) {
+                
+                    for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
+                        let chart: any = Highcharts.charts[i];
+                        // Find coordinates within the chart
+                        let event: any = chart.pointer.normalize(e);
+                        // Get the hovered point
+                        let point: any = chart.series[0].searchPoint(event, true);
+
+                        if (point) {
+                            point.highlight(e);
+                        }
+                    }
+                }
+                
+            );
         });
+        
+        
         
     }, []);
     
@@ -347,7 +377,7 @@ export const HighChartsGraph = (props : props) => {
             </HighchartsReact>
         </div> 
         <div id='graph1'>
-            <HighchartsReact highcharts={Highcharts} options={graph1Options} {...highChartsProps} allowChartUpdate={true}>
+            <HighchartsReact ref={volumesRef} highcharts={Highcharts} options={graph1Options} {...highChartsProps} allowChartUpdate={true}>
             </HighchartsReact>
         </div>
     </div>

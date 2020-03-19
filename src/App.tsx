@@ -18,7 +18,7 @@ import {HighChartsGraph} from "./highcharts-react/HighChartsPrototype";
 import EchartsGraph from "./echartsForReact/echartsJS";
 import DraggablePoints from "./echartsForReact/DraggablePoints";
 
-const appState = generateState(3);
+const appState = generateState(20);
 
 export default () => 
   (<Router>
