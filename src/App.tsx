@@ -15,8 +15,9 @@ import VegaGraph from "./vega/vega-graph"
 import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/HighChartsPrototype";
-import EchartsGraph from "./echartsForReact/echartsJS";
+import {EchartsProtoType} from "./echartsForReact/EChartsProtoType"
 import DraggablePoints from "./echartsForReact/DraggablePoints";
+import SvgD32 from "./SvgD32";
 
 const appState = generateState(20);
 
@@ -39,6 +40,9 @@ export default () =>
       <Route path="/bizcharts">
           <BizCharts />
       </Route>
+        <Route path="/react-svg-d3">
+            <SvgD32 appState={appState}></SvgD32>
+        </Route>
       <Route path="/plottable">
           <div />
       </Route>
@@ -58,7 +62,7 @@ export default () =>
             <HighChartsGraph appState={appState}/>
         </Route>
         <Route path="/Echarts">
-            <EchartsGraph/>
+            <EchartsProtoType appState={appState}/>
         </Route>
         <Route path="/Drag">
             <DraggablePoints/>
