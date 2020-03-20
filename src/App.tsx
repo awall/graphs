@@ -16,7 +16,7 @@ import RumbleChartsGraph from "./RumbleCharts/rumbleGraph";
 import PlotlyGraph from "./plotly/plotlyGraph";
 import {HighChartsGraph} from "./highcharts-react/HighChartsPrototype";
 import {EchartsProtoType} from "./echartsForReact/EChartsProtoType"
-import DraggablePoints from "./echartsForReact/DraggablePoints";
+import {DraggableGraph} from "./highcharts-react/HighChartsDrag";
 import SvgD32 from "./SvgD32";
 
 const appState = generateState(20);
@@ -33,7 +33,7 @@ export default () =>
         <Link to="/Plotly">Plotly</Link>
         <Link to="/HighCharts">High Charts</Link>
         <Link to="/Echarts">Echarts</Link>
-        <Link to="/Drag">Draggable Echarts</Link>
+        <Link to="/Drag">Draggable Example</Link>
     </header>
 
     <Switch>
@@ -65,7 +65,7 @@ export default () =>
             <EchartsProtoType appState={appState}/>
         </Route>
         <Route path="/Drag">
-            <DraggablePoints/>
+            <DraggableGraph/>
         </Route>
     </Switch>
       

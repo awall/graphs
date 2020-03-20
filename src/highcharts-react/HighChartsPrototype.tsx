@@ -2,7 +2,6 @@
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
 import {AppState, Point} from '../AppState'
-import data from 'highcharts/modules/data'
 
 require("highcharts/modules/draggable-points")(Highcharts);
 require("highcharts/modules/accessibility")(Highcharts);
@@ -14,15 +13,7 @@ interface props {
     highChartProps? : HighchartsReact.Props
 }
 
-interface dispPoint {
-    x : any,
-    y : any,
-}
 
-interface pointEventArgs{
-    target : Highcharts.Point,
-    type: string,
-}
 
 export const HighChartsGraph = (props : props) => {
 
@@ -41,7 +32,30 @@ export const HighChartsGraph = (props : props) => {
         
         return newPoints;}
    );
-    
+
+    const onMouseDown = (event : React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        setMouseDown(true);
+        setCurrX(event.screenX);
+    };
+
+    const onMouseUp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+
+        setMouseDown(false);
+
+        let chart = downTimeRef.current.chart as Highcharts.Chart;
+
+        props.appState.streams.downtime.points = shadow.map(x => {return {x : x.x, y : x.y}});
+        chart.series[1].update({
+            id:'Shadow',
+            name: 'Shadow',
+            type: 'line',
+            step: 'center',
+            color: 'black',
+            yAxis : 0, //index of the axis,
+            animation: false,
+        });
+
+    };
     
     //You could make this modular, and compose the object instead of making it 1 large statement.
     const graph1Options = {
@@ -54,6 +68,10 @@ export const HighChartsGraph = (props : props) => {
         
         title: {
             text:"",
+        },
+
+        credits: {
+            enabled: false
         },
 
         boost: {
@@ -210,7 +228,8 @@ export const HighChartsGraph = (props : props) => {
                 animation: false,
                 stickyTracking: false,
                 boostThreshold : 10,
-                turboThreshold : 1000000
+                cursor: 'pointer',
+                turboThreshold : 1000000,
             },
             line: {
                 
@@ -258,30 +277,6 @@ export const HighChartsGraph = (props : props) => {
     const [currX, setCurrX] = React.useState<number>(0);
     const [mouseDown, setMouseDown] = React.useState<boolean>(false);
     
-    const onMouseDown = (event : React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        setMouseDown(true);
-        setCurrX(event.screenX);
-    };
-    
-    const onMouseUp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-        
-        setMouseDown(false);
-        
-        let chart = downTimeRef.current.chart as Highcharts.Chart;
-        
-        props.appState.streams.downtime.points = shadow.map(x => {return {x : x.x, y : x.y}});
-        chart.series[1].update({
-            id:'Shadow',
-            name: 'Shadow',
-            type: 'line',
-            step: 'center',
-            color: 'black',
-            yAxis : 0, //index of the axis,
-            animation: false,
-        });
-        
-    };
-
     const onMouseMove = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
         if(mouseDown){
@@ -313,17 +308,6 @@ export const HighChartsGraph = (props : props) => {
                 animation: false,
             });
         }
-        else {
-
-            for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
-                
-                let chart = Highcharts.charts[i];
-                
-                // Get the hovered point
-                // @ts-ignore
-                let point = chart.series[0].searchPoint(true);
-            }
-        }
     };
     
     React.useEffect(() => {
@@ -335,12 +319,15 @@ export const HighChartsGraph = (props : props) => {
                     for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
                         let chart: any = Highcharts.charts[i];
                         // Find coordinates within the chart
-                        let event: any = chart.pointer.normalize(e);
-                        // Get the hovered point
-                        let point: any = chart.series[0].searchPoint(event, true);
+                        
+                        if(chart !== undefined){
+                            let event: any = chart.pointer.normalize(e);
+                            // Get the hovered point
+                            let point: any = chart?.series[0]?.searchPoint(event, true);
 
-                        if (point) {
-                            point.highlight(e);
+                            if (point) {
+                                point.highlight(e);
+                            }
                         }
                     }
                 }
@@ -352,13 +339,16 @@ export const HighChartsGraph = (props : props) => {
                 
                     for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
                         let chart: any = Highcharts.charts[i];
-                        // Find coordinates within the chart
-                        let event: any = chart.pointer.normalize(e);
-                        // Get the hovered point
-                        let point: any = chart.series[0].searchPoint(event, true);
+                        
+                        if(chart !== undefined){
+                            
+                            let event: any = chart.pointer.normalize(e);
+                            // Get the hovered point
+                            let point: any = chart?.series[0]?.searchPoint(event, true);
 
-                        if (point) {
-                            point.highlight(e);
+                            if (point) {
+                                point.highlight(e);
+                            }
                         }
                     }
                 }

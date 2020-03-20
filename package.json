@@ -26,6 +26,7 @@
     "echarts-for-react": "^2.0.15-beta.1",
     "eslint-plugin-flowtype": "^4.6.0",
     "highcharts": "^8.0.4",
+    "highcharts-more": "^0.1.7",
     "highcharts-react-official": "^3.0.0",
     "nivo": "^0.31.0",
     "plotly.js-dist": "^1.52.3",
