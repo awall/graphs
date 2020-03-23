@@ -2,6 +2,7 @@ import './App.css';
 
 import React, { useRef, useState, useContext, useEffect, useMemo, useCallback  } from 'react';
 import * as d3 from 'd3';
+import { within } from '@testing-library/react';
 
 interface Point {
     x: Date,
@@ -15,12 +16,99 @@ const defaultData = (years: number) => {
             const year = 2000 + i;
             points.push({
                 x: new Date(year, m, 1),
-                y: 10 - 0.8 * m,
+                y: 10 - (i * 0.2),
             })
         }
     }
     return points;
 }
+
+type MultiplierCallback = (date: Date) => number;
+const identity = (date: Date) =>{ 
+    return 1.0;
+};
+
+const applyMultiplier = function(pts: Point[], multiplier: MultiplierCallback): Point[] {
+    return pts.map(p => ({
+        x: p.x,
+        y: multiplier(p.x) * p.y,
+    }));
+}
+
+export default () => {
+    const [[allPoints, multiplier], setAllPoints] = useState<[Point[], MultiplierCallback]>([defaultData(40), identity]);
+    const [zoom, setZoom] = useState<[Date, Date]|null>(null);
+
+    const margin = 10;
+    const timeDomain = zoom ?? [d3.min(allPoints, p => p.x)!, d3.max(allPoints, p => p.x)!];
+    const xScale = d3.scaleTime()
+        .domain(timeDomain)
+        .nice();
+
+    const points = applyMultiplier(cullPoints(allPoints, timeDomain), multiplier);
+    const cumPoints = useMemo(() => cumulative(points), [allPoints, zoom, multiplier]);
+
+    const rateScale = d3.scaleLinear()
+        .domain([0, d3.max(points, p => p.y)! * 1.5])
+        .nice();
+
+    const cumScale = d3.scaleLinear()
+        .domain([d3.min(cumPoints, p => p.y)!, d3.max(cumPoints, p => p.y)!])
+        .nice();
+
+    const onZoom = (zoomStart: Date, zoomEnd: Date) => {
+        const first = zoomStart.getTime() < zoomEnd.getTime() ? zoomStart : zoomEnd;
+        const second = zoomStart.getTime() < zoomEnd.getTime() ? zoomEnd : zoomStart;
+        setZoom([first, second]);
+    };
+
+    const doMultiply = (newm: MultiplierCallback|null) => {
+        setAllPoints(([pts, m]) => [
+            newm ? pts : applyMultiplier(pts, m),
+            newm ?? identity,
+        ]);
+    };
+
+    return <div className="App" style={{
+      marginLeft: `${margin}px`,
+      marginTop: `${margin}px`,
+      marginRight: `${margin}px`,
+      marginBottom: `${margin}px`,
+      height: `calc(100vh - ${margin * 2}px)`,
+    }}>
+        <svg id="svg" width="100%" height="100%">
+            <AcTable margin={20} layout={[
+                ["topy",    "toparea"   ],
+                [null,      "topx"      ],
+                ["bottomy", "bottomarea"],
+                [null,      "bottomx"   ],
+            ]}>
+                <AcChart cell="toparea">
+                    <AcSeries points={points} xScale={xScale} yScale={rateScale} />
+                </AcChart>
+                <AcAxis cell="topy" location="left" scale={rateScale} title="Production Rate (bbl/d)" />
+                <AcAxis cell="topx" location="bottom" scale={xScale} />
+                <ExtAxisZoom cell="topx" location="bottom" scale={xScale} onZoom={onZoom} />
+                <ExtBezierMultiplier cell="toparea" scale={xScale} doMultiply={doMultiply} />
+
+                <AcChart cell="bottomarea">
+                    <AcSeries points={cumPoints}  xScale={xScale} yScale={cumScale}/>
+                </AcChart>
+                <AcAxis cell="bottomy" location="left" scale={cumScale} title="Total Production (bbl)"/>
+                <AcAxis cell="bottomx" location="bottom" scale={xScale} />
+                <ExtAxisZoom cell="bottomx" location="bottom" scale={xScale} onZoom={onZoom} />
+
+            </AcTable>
+            
+        </svg>
+    </div>
+};
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Utilities
+//
+////////////////////////////////////////////////////////////////////////////////
 
 const daysBetween = (firstDate: Date, secondDate: Date) => {
     const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
@@ -52,6 +140,30 @@ const cumulative = (points: Point[]) => {
 
     return result;
 }
+
+const cullPoints = (points: Point[], [start, end]:[Date, Date]) => {
+    let s = 0;
+    for (; s < points.length; ++s) {
+        if (points[s].x.getTime() >= start.getTime()) {
+            break;
+        }
+    }
+
+    let e = 0;
+    for (e = points.length; e > 0; --e) {
+        if (points[e - 1].x.getTime() <= end.getTime()) {
+            break;
+        }
+    }
+
+    return points.slice(Math.max(0, s-1), Math.min(points.length, e+1));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//
+// Extensions 
+//
+////////////////////////////////////////////////////////////////////////////////
 
 interface ExtAxisZoomProps extends AcCellProps {
     scale: d3.ScaleTime<any, any>,
@@ -141,94 +253,160 @@ const ExtAxisZoom: React.FC<ExtAxisZoomProps> = (props) => {
     </>;
 };
 
-const cullPoints = (points: Point[], [start, end]:[Date, Date]) => {
-    let s = 0;
-    for (; s < points.length; ++s) {
-        if (points[s].x.getTime() >= start.getTime()) {
-            break;
-        }
-    }
-
-    let e = 0;
-    for (e = points.length; e > 0; --e) {
-        if (points[e - 1].x.getTime() <= end.getTime()) {
-            break;
-        }
-    }
-
-    return points.slice(Math.max(0, s-1), Math.min(points.length, e+1));
+interface ExtBezierMultiplierProps extends AcCellProps {
+    scale: d3.ScaleTime<any, any>,
+    doMultiply: (getRatio: MultiplierCallback|null) => void,
 }
 
-export default () => {
-    const [allPoints, setAllPoints] = useState(defaultData(1));
-    const [zoom, setZoom] = useState<[Date, Date]|null>(null);
-    
-    const margin = 10;
-    const timeDomain = zoom ?? [d3.min(allPoints, p => p.x)!, d3.max(allPoints, p => p.x)!];
-    const xScale = d3.scaleTime()
-        .domain(timeDomain)
-        .nice();
+interface ExtBezierMultiplierPoint {
+    x: number,
+    y: number,
+}
 
-    const points = cullPoints(allPoints, timeDomain);
-    const cumPoints = useMemo(() => cumulative(points), [allPoints, zoom]);
+interface ExtBezierMultiplierPoints {
+    start: ExtBezierMultiplierPoint,
+    middle: ExtBezierMultiplierPoint,
+    end: ExtBezierMultiplierPoint,
+}
 
-    const rateScale = d3.scaleLinear()
-        .domain([d3.min(points, p => p.y)!, d3.max(points, p => p.y)!])
-        .nice();
+const ExtBezierMultiplier: React.FC<ExtBezierMultiplierProps> = (props) => {
+    const rect = useCellRect();
+    const [drag, setDrag] = useState<ExtBezierMultiplierPoints|null>(null);
 
-    const cumScale = d3.scaleLinear()
-        .domain([d3.min(cumPoints, p => p.y)!, d3.max(cumPoints, p => p.y)!])
-        .nice();
+    const scale = props.scale.copy();
+    scale.range([0, rect.width]);
 
-    const onZoom = (zoomStart: Date, zoomEnd: Date) => {
-        const first = zoomStart.getTime() < zoomEnd.getTime() ? zoomStart : zoomEnd;
-        const second = zoomStart.getTime() < zoomEnd.getTime() ? zoomEnd : zoomStart;
-        setZoom([first, second]);
+    const dxy = (e: {clientX: number, clientY: number}) => ({
+        x: e.clientX - rect.left - rect.rootLeft,
+        y: e.clientY - rect.top - rect.rootTop,
+    });
+
+    const midpoint = (p1: ExtBezierMultiplierPoint, p2: ExtBezierMultiplierPoint) => ({
+        x: 0.5 * (p1.x + p2.x),
+        y: 0.5 * (p1.y + p2.y),
+    });
+
+    const xwithin = (n: ExtBezierMultiplierPoint, [min, max]: [number, number]) => ({
+        x: Math.min(max, Math.max(min, n.x)),
+        y: n.y,
+    });
+
+    const getRatio = (pts: ExtBezierMultiplierPoints) => {
+        const start = pts.start.x < pts.end.x ? pts.start : pts.end;
+        const end   = pts.start.x < pts.end.x ? pts.end : pts.start;
+        const middle = pts.middle;
+
+        return (date: Date) => {
+            const x = scale(date);
+            if (x >= start.x && x < middle.x) { // first half
+                const extent = (middle.y - start.y) / -start.y;
+                const mine = (start.x - x) / (start.x - middle.x);
+                return 1.0 + (extent * (Math.pow(Math.abs(mine), 1.3)));
+            }
+            if (x <= pts.end.x && x >= middle.x) { // second half
+                const extent = (middle.y - end.y) / -end.y;
+                const mine = (x - end.x) / (middle.x - end.x);
+                return 1.0 + (extent * (Math.pow(Math.abs(mine), 1.3)));
+            }
+            return 1.0
+        };
     };
 
-    return <div className="App" style={{
-      marginLeft: `${margin}px`,
-      marginTop: `${margin}px`,
-      marginRight: `${margin}px`,
-      marginBottom: `${margin}px`,
-      height: `calc(100vh - ${margin * 2}px)`,
-    }}>
-        <svg id="svg" width="100%" height="100%">
-            <AcTable margin={20} layout={[
-                ["topy",    "toparea"   ],
-                [null,      "topx"      ],
-                ["bottomy", "bottomarea"],
-                [null,      "bottomx"   ],
-            ]}>
-                <AcChart cell="toparea">
-                    <AcSeries points={points} xScale={xScale} yScale={rateScale} />
-                </AcChart>
-                <AcAxis cell="topy" location="left" scale={rateScale} title="Production Rate (bbl/d)" />
-                <AcAxis cell="topx" location="bottom" scale={xScale} />
-                <ExtAxisZoom cell="topx" location="bottom" scale={xScale} onZoom={onZoom} />
+    const mouseMoveMiddle = (e: MouseEvent) => {
+        const where = dxy(e);
+        setDrag(old => {
+            props.doMultiply(getRatio(old!));
+            return {
+                ...old!,
+                middle: xwithin(where, [old!.start.x, old!.end.x])
+            };
+        });
+    };
 
-                <AcChart cell="bottomarea">
-                    <AcSeries points={cumPoints}  xScale={xScale} yScale={cumScale}/>
-                </AcChart>
-                <AcAxis cell="bottomy" location="left" scale={cumScale} title="Total Production (bbl)"/>
-                <AcAxis cell="bottomx" location="bottom" scale={xScale} />
-                <ExtAxisZoom cell="bottomx" location="bottom" scale={xScale} onZoom={onZoom} />
-            </AcTable>
-        </svg>
-    </div>
+    const mouseMoveEnd = (e: MouseEvent) => {
+        const where = dxy(e);
+        setDrag(old => ({ ...old!,
+                    middle: midpoint(old!.start, where),
+                    end: where }));
+    };
+
+    const mouseDownMiddle = (e: MouseEvent) => {
+        setDrag(old => {
+            window.removeEventListener("mousemove", mouseMoveMiddle);
+            window.removeEventListener("mousedown", mouseDownMiddle);
+            props.doMultiply(null);
+            return null;
+        });
+    };
+
+    const mouseUpEnd = (e: MouseEvent) => {
+        setDrag(old => {
+            window.removeEventListener("mousemove", mouseMoveEnd);
+            window.removeEventListener("mouseup", mouseUpEnd);
+            window.addEventListener("mousedown", mouseDownMiddle);
+            window.addEventListener("mousemove", mouseMoveMiddle);
+            return { ...old! };
+        });
+    };
+
+    const onMouseDown = (e: React.MouseEvent) => {
+        const where = dxy(e);
+        setDrag(old => {
+            if (old != null) {
+                return old;
+            }
+
+            window.addEventListener("mouseup", mouseUpEnd);
+            window.addEventListener("mousemove", mouseMoveEnd);
+            return {
+                start: where,
+                middle: where,
+                end: where,
+                mode: "end",
+            };
+        });
+    };
+
+    return <>
+        {drag != null
+            ? <>
+                <line
+                    x1={drag.start.x}
+                    y1={drag.start.y}
+                    x2={drag.middle.x}
+                    y2={drag.middle.y}
+                    stroke={"gray"}
+                    strokeWidth={1} />
+                <line
+                    x1={drag.middle.x}
+                    y1={drag.middle.y}
+                    x2={drag.end.x}
+                    y2={drag.end.y}
+                    stroke={"gray"}
+                    strokeWidth={1} />
+                
+                <path d={`M ${drag.start.x} ${drag.start.y} 
+                            C ${0.5 * (drag.start.x + drag.middle.x)} ${0.5 * (drag.start.y + drag.middle.y)}, ${drag.start.x} ${drag.middle.y}, ${drag.middle.x} ${drag.middle.y}
+                          M ${drag.end.x} ${drag.end.y}
+                            C ${0.5 * (drag.end.x + drag.middle.x)} ${0.5 * (drag.end.y + drag.middle.y)}, ${drag.end.x} ${drag.middle.y}, ${drag.middle.x} ${drag.middle.y}
+                        `} stroke="black" strokeWidth={2} fill="none"/>
+              </>
+            : null
+        }
+        <rect opacity="0.0"
+            height={rect.height}
+            width={rect.width}
+            fill="black" 
+            onMouseDown={onMouseDown}
+        />
+    </>;
 };
 
-interface AcTableProps
-{
-    layout: (string|null)[][],
-    margin?: number,
-}
-
-interface AcCellProps
-{
-    cell: string
-}
-
+////////////////////////////////////////////////////////////////////////////////
+//
+// AcChart
+//
+////////////////////////////////////////////////////////////////////////////////
 interface AcRect
 {
     rootTop: number,
@@ -241,8 +419,6 @@ interface AcRect
     height: number,
 }
 
-const zeroRect = {rootTop: 0, rootLeft: 0, top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0};
-
 interface AcSizing
 {
     min: number,
@@ -254,6 +430,13 @@ interface AcPosition
     r: number,
     c: number,
 }
+
+interface AcCellProps
+{
+    cell: string
+}
+
+const zeroRect = {rootTop: 0, rootLeft: 0, top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0};
 
 const sizing = (el: any) => {
     if (el.type == AcChart)
@@ -275,6 +458,12 @@ const extractCell = (el: any) => {
 const AcCellRect = React.createContext(zeroRect);
 
 const useCellRect = () => useContext(AcCellRect);
+
+interface AcTableProps
+{
+    layout: (string|null)[][],
+    margin?: number,
+}
 
 const AcTable: React.FC<AcTableProps> = React.memo((props) => {
     const [rect, setRect] = useState<AcRect>(zeroRect);
@@ -371,14 +560,16 @@ const AcTable: React.FC<AcTableProps> = React.memo((props) => {
     const newChildren = new Array();
     children.forEach(child => {
         const cell = extractCell(child);
-        const r = cellRects.get(cell)!;
-        newChildren.push(
-            <g transform={`translate(${r.left} ${r.top})`}>
+        if (cell) {
+            const r = cellRects.get(cell)!;
+            newChildren.push(<g transform={`translate(${r.left} ${r.top})`}>
                 <AcCellRect.Provider value={r}>
                     { child }
                 </AcCellRect.Provider>
-            </g>
-        );
+            </g>);
+        } else {
+            newChildren.push(child);
+        }
     });
 
     const clipPaths = new Array();
@@ -401,7 +592,6 @@ interface AcChartProps extends AcCellProps
 
 const AcChart: React.FC<AcChartProps> = (props) => {
     const rect = useCellRect();
-    //<rect width={rect.width} height={rect.height} stroke="black" fill="none" strokeWidth="1" />
     return <g clipPath={`url(#${props.cell})`}>
         { React.Children.toArray(props.children) }
     </g>;
@@ -421,21 +611,21 @@ const AcAxis: React.FC<AcAxisProps> = React.memo((props) => {
     const rect = useCellRect();
     const scale = props.scale.copy();
 
-    if (props.location == "bottom")
+    if (props.location === "bottom")
         scale.range([0, rect.width]);
     else
         scale.range([rect.height, 0]);
 
     useEffect(() => {
         let axis: any = null;
-        if (props.location == "bottom")
+        if (props.location === "bottom")
             axis = d3.axisBottom(scale).ticks(rect.width / 200);
         else
             axis = d3.axisLeft(scale).ticks(rect.height / 80);
         d3.select(ref.current!).call(axis);
     });
 
-    if (props.location == "bottom")
+    if (props.location === "bottom")
         return <g ref={ref} className="axis" transform={`translate(0 0)`} />;
     else 
         return <>
