@@ -36,3 +36,18 @@
     transform: rotate(360deg);
   }
 }
+
+.axis {
+  stroke: #888;  
+}
+
+.tick > line {
+  stroke: #444;
+  fill: none;
+  stroke-width: 1;
+}
+
+.tick > text {
+  fill: #888;
+  font-size: larger;
+}
